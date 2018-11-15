@@ -23,12 +23,17 @@ const int encoderSteps = 100;
 LimitedEncoder attackEncoder(20, 19, 0, encoderSteps);
 LimitedEncoder releaseEncoder(18, 17, 0, encoderSteps);
 LimitedEncoder phaseEncoder(16, 15, 0, encoderSteps);
+const int modePin = 0;
 
 float attackValue = 0;
 float releaseValue = 0;
 float phaseValue = 0;
+bool buttonValue = HIGH;
+bool lfoMode = false;
 
 void setup() {
+  pinMode(modePin, INPUT_PULLUP);
+
   Serial.begin(9600);
 
   AudioMemory(10);
@@ -48,6 +53,7 @@ void loop() {
   float attack = map_float(attackEncoder.read(), 0, encoderSteps, 0, 10000);
   float release = map_float(releaseEncoder.read(), 0, encoderSteps, 0, 10000);
   float phase = map_float(phaseEncoder.read(), 0, encoderSteps, -0.95, 0.95);
+  bool button = digitalRead(modePin);
 
   if (attack != attackValue) {
     envelope.attack(attack);
@@ -64,6 +70,12 @@ void loop() {
     phaseValue = phase;
   }
 
+  if (button == LOW && button != buttonValue) {
+    lfoMode = !lfoMode;
+    Serial.println(lfoMode);
+  }
+  buttonValue = button;
+  
   envelope.noteOn();
   delay(100);
   envelope.noteOff();
