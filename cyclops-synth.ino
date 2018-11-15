@@ -24,15 +24,18 @@ LimitedEncoder attackEncoder(20, 19, 0, encoderSteps);
 LimitedEncoder releaseEncoder(18, 17, 0, encoderSteps);
 LimitedEncoder phaseEncoder(16, 15, 0, encoderSteps);
 const int modePin = 0;
+const int notePin = 1;
 
 float attackValue = 0;
 float releaseValue = 0;
 float phaseValue = 0;
-bool buttonValue = HIGH;
+bool modeButtonValue = HIGH;
+bool noteButtonValue = HIGH;
 bool lfoMode = false;
 
 void setup() {
   pinMode(modePin, INPUT_PULLUP);
+  pinMode(notePin, INPUT_PULLUP);
 
   Serial.begin(9600);
 
@@ -53,7 +56,8 @@ void loop() {
   float attack = map_float(attackEncoder.read(), 0, encoderSteps, 0, 10000);
   float release = map_float(releaseEncoder.read(), 0, encoderSteps, 0, 10000);
   float phase = map_float(phaseEncoder.read(), 0, encoderSteps, -0.95, 0.95);
-  bool button = digitalRead(modePin);
+  bool modeButton = digitalRead(modePin);
+  bool noteButton = digitalRead(notePin);
 
   if (attack != attackValue) {
     envelope.attack(attack);
@@ -70,16 +74,23 @@ void loop() {
     phaseValue = phase;
   }
 
-  if (button == LOW && button != buttonValue) {
+  if (modeButton == LOW && modeButton != modeButtonValue) {
     lfoMode = !lfoMode;
     Serial.println(lfoMode);
   }
-  buttonValue = button;
-  
-  envelope.noteOn();
-  delay(100);
-  envelope.noteOff();
-  delay(1000);
+  modeButtonValue = modeButton;
+
+  if (noteButton == LOW && noteButton != noteButtonValue) {
+    envelope.noteOn();
+    noteButtonValue = noteButton;
+    Serial.println("note on");
+  } else if (noteButton == HIGH && noteButton != noteButtonValue) {
+    envelope.noteOff();
+    noteButtonValue = noteButton;
+    Serial.println("note off");
+  }
+
+  delay(30);
 }
 
 float map_float(float x, float in_min, float in_max, float out_min, float out_max) {
