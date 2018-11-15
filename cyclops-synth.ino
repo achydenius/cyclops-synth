@@ -18,11 +18,15 @@ AudioConnection          patchCord3(envelope, 0, usb, 0);
 AudioConnection          patchCord4(envelope, 0, usb, 1);
 // GUItool: end automatically generated code
 
-LimitedEncoder attackEncoder(20, 19, -100, 100);
-LimitedEncoder releaseEncoder(18, 17, -100, 100);
+const int encoderSteps = 100;
+
+LimitedEncoder attackEncoder(20, 19, 0, encoderSteps);
+LimitedEncoder releaseEncoder(18, 17, 0, encoderSteps);
+LimitedEncoder phaseEncoder(16, 15, 0, encoderSteps);
 
 float attackValue = 0;
-float releaseValue = 250;
+float releaseValue = 0;
+float phaseValue = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -31,16 +35,19 @@ void setup() {
   pwm.frequency(440);
   pwm.amplitude(0.5);
   dc.amplitude(0.5);
-  
-  envelope.attack(attackValue);
+
+  attackEncoder.write(1);
+  releaseEncoder.write(5);
+  phaseEncoder.write(50);
+
   envelope.decay(0);
   envelope.sustain(1.0);
-  envelope.release(releaseValue);
 }
 
 void loop() {
-  float attack = map_float(attackEncoder.read(), -100, 100, 0, 10000);
-  float release = map_float(releaseEncoder.read(), -100, 100, 0, 10000);
+  float attack = map_float(attackEncoder.read(), 0, encoderSteps, 0, 10000);
+  float release = map_float(releaseEncoder.read(), 0, encoderSteps, 0, 10000);
+  float phase = map_float(phaseEncoder.read(), 0, encoderSteps, -0.95, 0.95);
 
   if (attack != attackValue) {
     envelope.attack(attack);
@@ -50,6 +57,11 @@ void loop() {
   if (release != releaseValue) {
     envelope.release(release);
     releaseValue = release;
+  }
+
+  if (phase != phaseValue) {
+    dc.amplitude(phase);
+    phaseValue = phase;
   }
 
   envelope.noteOn();
