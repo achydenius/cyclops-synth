@@ -7,87 +7,142 @@
 #include <SerialFlash.h>
 
 // GUItool: begin automatically generated code
-AudioOutputI2S           i2s;           //xy=205,346
-AudioSynthWaveformDc     dc;            //xy=289,198
-AudioSynthWaveformPWM    pwm;           //xy=436,373
-AudioEffectEnvelope      envelope;      //xy=652,286
-AudioOutputUSB           usb;           //xy=897,408
-AudioConnection          patchCord1(dc, pwm);
-AudioConnection          patchCord2(pwm, envelope);
-AudioConnection          patchCord3(envelope, 0, usb, 0);
-AudioConnection          patchCord4(envelope, 0, usb, 1);
+AudioSynthWaveformSine   lfo;           //xy=228,330
+AudioSynthWaveformPWM    sub;           //xy=434,366
+AudioSynthWaveformPWM    osc;           //xy=435,308
+AudioOutputI2S           i2s;           //xy=578,227
+AudioMixer4              mixer;         //xy=595,340
+AudioEffectEnvelope      envelope;      //xy=780,325
+AudioOutputUSB           usb;           //xy=955,386
+AudioConnection          patchCord1(lfo, osc);
+AudioConnection          patchCord2(lfo, sub);
+AudioConnection          patchCord3(sub, 0, mixer, 1);
+AudioConnection          patchCord4(osc, 0, mixer, 0);
+AudioConnection          patchCord5(mixer, envelope);
+AudioConnection          patchCord6(envelope, 0, usb, 0);
 // GUItool: end automatically generated code
 
 const int encoderSteps = 100;
 
-LimitedEncoder attackEncoder(20, 19, 0, encoderSteps);
-LimitedEncoder releaseEncoder(18, 17, 0, encoderSteps);
-LimitedEncoder phaseEncoder(16, 15, 0, encoderSteps);
-const int modePin = 0;
-const int notePin = 1;
+LimitedEncoder envEncoder(19, 20, 0, encoderSteps);
+LimitedEncoder lfoEncoder(17, 18, 0, encoderSteps);
+LimitedEncoder subEncoder(15, 16, 0, encoderSteps);
+const int envPin = 0;
+const int lfoPin = 1;
+const int subPin = 2;
 
-float attackValue = 0;
-float releaseValue = 0;
-float phaseValue = 0;
-bool modeButtonValue = HIGH;
-bool noteButtonValue = HIGH;
-bool lfoMode = false;
+float envAttackValue = 0;
+float envReleaseValue = 0;
+float lfoFreqValue = 0;
+float lfoAmpValue = 0;
+float subFreqValue = 0;
+float subAmpValue = 0;
+bool envButtonValue = HIGH;
+bool lfoButtonValue = HIGH;
+bool subButtonValue = HIGH;
+bool envState = 0;
+bool lfoState = 0;
+bool subState = 0;
 
 void setup() {
-  pinMode(modePin, INPUT_PULLUP);
-  pinMode(notePin, INPUT_PULLUP);
+  pinMode(envPin, INPUT_PULLUP);
+  pinMode(lfoPin, INPUT_PULLUP);
+  pinMode(subPin, INPUT_PULLUP);
 
   Serial.begin(9600);
 
   AudioMemory(10);
-  pwm.frequency(440);
-  pwm.amplitude(0.5);
-  dc.amplitude(0.5);
 
-  attackEncoder.write(1);
-  releaseEncoder.write(5);
-  phaseEncoder.write(50);
+  osc.frequency(440);
+  osc.amplitude(1.0);
+  sub.frequency(220);
+  sub.amplitude(1.0);
+
+  envEncoder.write(1);
+  lfoEncoder.write(5);
+  subEncoder.write(1.0);
 
   envelope.decay(0);
   envelope.sustain(1.0);
 }
 
+bool playing = false;
+unsigned long time;
 void loop() {
-  float attack = map_float(attackEncoder.read(), 0, encoderSteps, 0, 10000);
-  float release = map_float(releaseEncoder.read(), 0, encoderSteps, 0, 10000);
-  float phase = map_float(phaseEncoder.read(), 0, encoderSteps, -0.95, 0.95);
-  bool modeButton = digitalRead(modePin);
-  bool noteButton = digitalRead(notePin);
+  bool envButton = digitalRead(envPin);
+  bool lfoButton = digitalRead(lfoPin);
+  bool subButton = digitalRead(subPin);
 
-  if (attack != attackValue) {
-    envelope.attack(attack);
-    attackValue = attack;
+  if (envButton == LOW && envButton != envButtonValue) {
+    envState = !envState;
+    Serial.println(envState ? "Env: Release" : "Env: Attack");
+  }
+  envButtonValue = envButton;
+
+  if (lfoButton == LOW && lfoButton != lfoButtonValue) {
+    lfoState = !lfoState;
+    Serial.println(lfoState ? "LFO: Amplitude" : "Env: Frequency");
+  }
+  lfoButtonValue = lfoButton;
+
+  if (subButton == LOW && subButton != subButtonValue) {
+    subState = !subState;
+    Serial.println(subState ? "Sub: Amplitude" : "Sub: Detune");
+  }
+  subButtonValue = subButton;
+
+  float envValue = map_float(envEncoder.read(), 0, encoderSteps, 0, 10000);
+  if (envState && envValue != envReleaseValue) {
+    envelope.release(envValue);
+    envReleaseValue = envValue;
+    Serial.println(envReleaseValue);
+  } else if (!envState && envValue != envAttackValue) {
+    envelope.attack(envValue);
+    envAttackValue = envValue;
+    Serial.println(envAttackValue);
   }
 
-  if (release != releaseValue) {
-    envelope.release(release);
-    releaseValue = release;
+  if (lfoState) {
+    float lfoValue = map_float(lfoEncoder.read(), 0, encoderSteps, 0, 1.0);
+    if (lfoValue != lfoAmpValue) {
+      lfo.amplitude(lfoValue);
+      lfoAmpValue = lfoValue;
+      Serial.println(lfoAmpValue);
+    }
+  } else {
+    float lfoValue = map_float(lfoEncoder.read(), 0, encoderSteps, 0, 10.0);
+    if (lfoValue != lfoFreqValue) {
+      lfo.frequency(lfoValue);
+      lfoFreqValue = lfoValue;
+      Serial.println(lfoFreqValue);
+    }
   }
 
-  if (phase != phaseValue) {
-    dc.amplitude(phase);
-    phaseValue = phase;
+  if (subState) {
+    float subValue = map_float(subEncoder.read(), 0, encoderSteps, 0, 1.0);
+    if (subValue != subAmpValue) {
+      sub.amplitude(subValue);
+      subAmpValue = subValue;
+      Serial.println(subAmpValue);
+    }
+  } else {
+    float subValue = map_float(subEncoder.read(), 0, encoderSteps, 220, 210);
+    if (subValue != subFreqValue) {
+      sub.frequency(subValue);
+      subFreqValue = subValue;
+      Serial.println(subFreqValue);
+    }
   }
 
-  if (modeButton == LOW && modeButton != modeButtonValue) {
-    lfoMode = !lfoMode;
-    Serial.println(lfoMode);
-  }
-  modeButtonValue = modeButton;
-
-  if (noteButton == LOW && noteButton != noteButtonValue) {
-    envelope.noteOn();
-    noteButtonValue = noteButton;
-    Serial.println("note on");
-  } else if (noteButton == HIGH && noteButton != noteButtonValue) {
-    envelope.noteOff();
-    noteButtonValue = noteButton;
-    Serial.println("note off");
+  unsigned long t = millis();
+  if (t - time > 2000) {
+    if (playing) {
+      envelope.noteOff();
+    } else {
+      envelope.noteOn();
+    }
+    playing = !playing;
+    time = t;
   }
 
   delay(30);
