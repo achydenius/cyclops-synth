@@ -21,14 +21,39 @@ void LimitedEncoder::write(int32_t value) {
 }
 
 void LimitedEncoder::update() {
-    int value = digitalRead(buttonPin);
-    if (value == LOW && previousButtonValue == HIGH) {
+    int buttonValue = digitalRead(buttonPin);
+    if (buttonValue == LOW && previousButtonValue == HIGH) {
         buttonClicked = true;
         buttonState = !buttonState;
     } else {
         buttonClicked = false;
     }
-    previousButtonValue = value;
+    previousButtonValue = buttonValue;
+
+    int32_t encoderValue = read();
+    if (!buttonState) {
+        if (encoderValue != firstValue) {
+            firstValue = encoderValue;
+            firstValueChanged = true;
+        } else {
+            firstValueChanged = false;
+        }
+    } else {
+        if (encoderValue != secondValue) {
+            secondValue = encoderValue;
+            secondValueChanged = true;
+        } else {
+            secondValueChanged = false;
+        }
+    }
+}
+
+bool LimitedEncoder::hasValueChanged() {
+    return buttonState ? secondValueChanged : firstValueChanged;
+}
+
+int32_t LimitedEncoder::getValue() {
+    return buttonState ? secondValue : firstValue;
 }
 
 bool LimitedEncoder::isButtonClicked() {

@@ -28,13 +28,6 @@ LimitedEncoder envEncoder(19, 20, 0, 0, encoderSteps);
 LimitedEncoder lfoEncoder(17, 18, 1, 0, encoderSteps);
 LimitedEncoder subEncoder(15, 16, 2, 0, encoderSteps);
 
-float envAttackValue = 0;
-float envReleaseValue = 0;
-float lfoFreqValue = 0;
-float lfoAmpValue = 0;
-float subFreqValue = 0;
-float subAmpValue = 0;
-
 void setup() {
   Serial.begin(9600);
 
@@ -72,47 +65,38 @@ void loop() {
     Serial.println(subEncoder.getButtonState() ? "Sub: Amplitude" : "Sub: Detune");
   }
 
-  float envValue = map_float(envEncoder.read(), 0, encoderSteps, 0, 10000);
-  if (envEncoder.getButtonState() && envValue != envReleaseValue) {
-    envelope.release(envValue);
-    envReleaseValue = envValue;
-    Serial.println(envReleaseValue);
-  } else if (!envEncoder.getButtonState() && envValue != envAttackValue) {
-    envelope.attack(envValue);
-    envAttackValue = envValue;
-    Serial.println(envAttackValue);
+  if (envEncoder.hasValueChanged()) {
+    float value = map_float(envEncoder.getValue(), 0, encoderSteps, 0, 10000);
+    if (envEncoder.getButtonState()) {
+      envelope.release(value);
+    } else {
+      envelope.attack(value);
+    }
+    Serial.println(value);
   }
 
-  if (lfoEncoder.getButtonState()) {
-    float lfoValue = map_float(lfoEncoder.read(), 0, encoderSteps, 0, 1.0);
-    if (lfoValue != lfoAmpValue) {
-      lfo.amplitude(lfoValue);
-      lfoAmpValue = lfoValue;
-      Serial.println(lfoAmpValue);
+  if (lfoEncoder.hasValueChanged()) {
+    float value;
+    if (lfoEncoder.getButtonState()) {
+      value = map_float(lfoEncoder.getValue(), 0, encoderSteps, 0, 1.0);
+      lfo.amplitude(value);
+    } else {
+      value = map_float(lfoEncoder.getValue(), 0, encoderSteps, 0, 10.0);
+      lfo.frequency(value);
     }
-  } else {
-    float lfoValue = map_float(lfoEncoder.read(), 0, encoderSteps, 0, 10.0);
-    if (lfoValue != lfoFreqValue) {
-      lfo.frequency(lfoValue);
-      lfoFreqValue = lfoValue;
-      Serial.println(lfoFreqValue);
-    }
+    Serial.println(value);
   }
-
-  if (subEncoder.getButtonState()) {
-    float subValue = map_float(subEncoder.read(), 0, encoderSteps, 0, 1.0);
-    if (subValue != subAmpValue) {
-      sub.amplitude(subValue);
-      subAmpValue = subValue;
-      Serial.println(subAmpValue);
+  
+  if (subEncoder.hasValueChanged()) {
+    float value;
+    if (subEncoder.getButtonState()) {
+      value = map_float(subEncoder.getValue(), 0, encoderSteps, 0, 1.0);
+      sub.amplitude(value);
+    } else {
+      value = map_float(subEncoder.getValue(), 0, encoderSteps, 220, 210);
+      sub.frequency(value);
     }
-  } else {
-    float subValue = map_float(subEncoder.read(), 0, encoderSteps, 220, 210);
-    if (subValue != subFreqValue) {
-      sub.frequency(subValue);
-      subFreqValue = subValue;
-      Serial.println(subFreqValue);
-    }
+    Serial.println(value);
   }
 
   unsigned long t = millis();

@@ -7,6 +7,8 @@ class LimitedEncoder : Encoder {
     int32_t min, max;
     int32_t lastAbsolute, lastRelative;
     uint8_t buttonPin;
+    int32_t firstValue, secondValue;
+    bool firstValueChanged, secondValueChanged;
     bool buttonState;
     bool buttonClicked;
     int previousButtonValue;
@@ -27,6 +29,8 @@ public:
 
     int32_t read();
     void write(int32_t value);
+    bool hasValueChanged();
+    int32_t getValue();
     void update();
     bool isButtonClicked();
     bool getButtonState();
