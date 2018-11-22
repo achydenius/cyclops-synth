@@ -20,6 +20,25 @@ void LimitedEncoder::write(int32_t value) {
     Encoder::write(limited);
 }
 
+void LimitedEncoder::update() {
+    int value = digitalRead(buttonPin);
+    if (value == LOW && previousButtonValue == HIGH) {
+        buttonClicked = true;
+        buttonState = !buttonState;
+    } else {
+        buttonClicked = false;
+    }
+    previousButtonValue = value;
+}
+
+bool LimitedEncoder::isButtonClicked() {
+    return buttonClicked;
+}
+
+bool LimitedEncoder::getButtonState() {
+    return buttonState;
+}
+
 int32_t LimitedEncoder::clamp(int32_t value, int32_t min, int32_t max) {
     if (value < min) {
         return min;

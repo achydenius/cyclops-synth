@@ -24,12 +24,9 @@ AudioConnection          patchCord6(envelope, 0, usb, 0);
 
 const int encoderSteps = 100;
 
-LimitedEncoder envEncoder(19, 20, 0, encoderSteps);
-LimitedEncoder lfoEncoder(17, 18, 0, encoderSteps);
-LimitedEncoder subEncoder(15, 16, 0, encoderSteps);
-const int envPin = 0;
-const int lfoPin = 1;
-const int subPin = 2;
+LimitedEncoder envEncoder(19, 20, 0, 0, encoderSteps);
+LimitedEncoder lfoEncoder(17, 18, 1, 0, encoderSteps);
+LimitedEncoder subEncoder(15, 16, 2, 0, encoderSteps);
 
 float envAttackValue = 0;
 float envReleaseValue = 0;
@@ -37,18 +34,8 @@ float lfoFreqValue = 0;
 float lfoAmpValue = 0;
 float subFreqValue = 0;
 float subAmpValue = 0;
-bool envButtonValue = HIGH;
-bool lfoButtonValue = HIGH;
-bool subButtonValue = HIGH;
-bool envState = 0;
-bool lfoState = 0;
-bool subState = 0;
 
 void setup() {
-  pinMode(envPin, INPUT_PULLUP);
-  pinMode(lfoPin, INPUT_PULLUP);
-  pinMode(subPin, INPUT_PULLUP);
-
   Serial.begin(9600);
 
   AudioMemory(10);
@@ -69,40 +56,34 @@ void setup() {
 bool playing = false;
 unsigned long time;
 void loop() {
-  bool envButton = digitalRead(envPin);
-  bool lfoButton = digitalRead(lfoPin);
-  bool subButton = digitalRead(subPin);
+  envEncoder.update();
+  lfoEncoder.update();
+  subEncoder.update();
 
-  if (envButton == LOW && envButton != envButtonValue) {
-    envState = !envState;
-    Serial.println(envState ? "Env: Release" : "Env: Attack");
+  if (envEncoder.isButtonClicked()) {
+    Serial.println(envEncoder.getButtonState() ? "Env: Release" : "Env: Attack");
   }
-  envButtonValue = envButton;
 
-  if (lfoButton == LOW && lfoButton != lfoButtonValue) {
-    lfoState = !lfoState;
-    Serial.println(lfoState ? "LFO: Amplitude" : "Env: Frequency");
+  if (lfoEncoder.isButtonClicked()) {
+    Serial.println(lfoEncoder.getButtonState() ? "LFO: Amplitude" : "Env: Frequency");
   }
-  lfoButtonValue = lfoButton;
 
-  if (subButton == LOW && subButton != subButtonValue) {
-    subState = !subState;
-    Serial.println(subState ? "Sub: Amplitude" : "Sub: Detune");
+  if (subEncoder.isButtonClicked()) {
+    Serial.println(subEncoder.getButtonState() ? "Sub: Amplitude" : "Sub: Detune");
   }
-  subButtonValue = subButton;
 
   float envValue = map_float(envEncoder.read(), 0, encoderSteps, 0, 10000);
-  if (envState && envValue != envReleaseValue) {
+  if (envEncoder.getButtonState() && envValue != envReleaseValue) {
     envelope.release(envValue);
     envReleaseValue = envValue;
     Serial.println(envReleaseValue);
-  } else if (!envState && envValue != envAttackValue) {
+  } else if (!envEncoder.getButtonState() && envValue != envAttackValue) {
     envelope.attack(envValue);
     envAttackValue = envValue;
     Serial.println(envAttackValue);
   }
 
-  if (lfoState) {
+  if (lfoEncoder.getButtonState()) {
     float lfoValue = map_float(lfoEncoder.read(), 0, encoderSteps, 0, 1.0);
     if (lfoValue != lfoAmpValue) {
       lfo.amplitude(lfoValue);
@@ -118,7 +99,7 @@ void loop() {
     }
   }
 
-  if (subState) {
+  if (subEncoder.getButtonState()) {
     float subValue = map_float(subEncoder.read(), 0, encoderSteps, 0, 1.0);
     if (subValue != subAmpValue) {
       sub.amplitude(subValue);
