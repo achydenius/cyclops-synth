@@ -20,50 +20,6 @@ void LimitedEncoder::write(int32_t value) {
     Encoder::write(limited);
 }
 
-void LimitedEncoder::update() {
-    int buttonValue = digitalRead(buttonPin);
-    if (buttonValue == LOW && previousButtonValue == HIGH) {
-        buttonClicked = true;
-        buttonState = !buttonState;
-    } else {
-        buttonClicked = false;
-    }
-    previousButtonValue = buttonValue;
-
-    int32_t encoderValue = read();
-    if (!buttonState) {
-        if (encoderValue != firstValue) {
-            firstValue = encoderValue;
-            firstValueChanged = true;
-        } else {
-            firstValueChanged = false;
-        }
-    } else {
-        if (encoderValue != secondValue) {
-            secondValue = encoderValue;
-            secondValueChanged = true;
-        } else {
-            secondValueChanged = false;
-        }
-    }
-}
-
-bool LimitedEncoder::hasValueChanged() {
-    return buttonState ? secondValueChanged : firstValueChanged;
-}
-
-int32_t LimitedEncoder::getValue() {
-    return buttonState ? secondValue : firstValue;
-}
-
-bool LimitedEncoder::isButtonClicked() {
-    return buttonClicked;
-}
-
-bool LimitedEncoder::getButtonState() {
-    return buttonState;
-}
-
 int32_t LimitedEncoder::clamp(int32_t value, int32_t min, int32_t max) {
     if (value < min) {
         return min;

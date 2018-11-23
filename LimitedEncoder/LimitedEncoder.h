@@ -6,34 +6,17 @@
 class LimitedEncoder : Encoder {
     int32_t min, max;
     int32_t lastAbsolute, lastRelative;
-    uint8_t buttonPin;
-    int32_t firstValue, secondValue;
-    bool firstValueChanged, secondValueChanged;
-    bool buttonState;
-    bool buttonClicked;
-    int previousButtonValue;
 
 public:
-    LimitedEncoder(uint8_t encoderPin1, uint8_t encoderPin2, uint8_t buttonPin, int32_t encoderMin, int32_t encoderMax) :
-        Encoder(encoderPin1, encoderPin2),
-        min(encoderMin),
-        max(encoderMax),
+    LimitedEncoder(uint8_t pin1, uint8_t pin2, int32_t min, int32_t max) :
+        Encoder(pin1, pin2),
+        min(min),
+        max(max),
         lastAbsolute(0),
-        lastRelative(0),
-        buttonPin(buttonPin),
-        buttonState(false),
-        buttonClicked(false),
-        previousButtonValue(LOW) {
-        pinMode(buttonPin, INPUT_PULLUP);
-    }
+        lastRelative(0) {}
 
     int32_t read();
     void write(int32_t value);
-    bool hasValueChanged();
-    int32_t getValue();
-    void update();
-    bool isButtonClicked();
-    bool getButtonState();
 
 private:
     int32_t clamp(int32_t value, int32_t min, int32_t max);

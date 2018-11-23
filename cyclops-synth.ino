@@ -1,4 +1,4 @@
-#include <LimitedEncoder.h>
+#include <ButtonEncoder.h>
 
 #include <Audio.h>
 #include <Wire.h>
@@ -24,9 +24,9 @@ AudioConnection          patchCord6(envelope, 0, usb, 0);
 
 const int encoderSteps = 100;
 
-LimitedEncoder envEncoder(19, 20, 0, 0, encoderSteps);
-LimitedEncoder lfoEncoder(17, 18, 1, 0, encoderSteps);
-LimitedEncoder subEncoder(15, 16, 2, 0, encoderSteps);
+ButtonEncoder envEncoder(19, 20, 0, encoderSteps, 0);
+ButtonEncoder lfoEncoder(17, 18, 0, encoderSteps, 1);
+ButtonEncoder subEncoder(15, 16, 0, encoderSteps, 2);
 
 void setup() {
   Serial.begin(9600);
@@ -38,9 +38,9 @@ void setup() {
   sub.frequency(220);
   sub.amplitude(1.0);
 
-  envEncoder.write(1);
-  lfoEncoder.write(5);
-  subEncoder.write(1.0);
+  envEncoder.setValue(1);
+  lfoEncoder.setValue(5);
+  subEncoder.setValue(1.0);
 
   envelope.decay(0);
   envelope.sustain(1.0);
