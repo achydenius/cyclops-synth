@@ -1,4 +1,4 @@
-#include <LimitedEncoder.h>
+#include <TogglableEncoder.h>
 
 #include <Audio.h>
 #include <Wire.h>
@@ -22,33 +22,11 @@ AudioConnection          patchCord5(mixer, envelope);
 AudioConnection          patchCord6(envelope, 0, usb, 0);
 // GUItool: end automatically generated code
 
-const int encoderSteps = 100;
-
-LimitedEncoder envEncoder(19, 20, 0, encoderSteps);
-LimitedEncoder lfoEncoder(17, 18, 0, encoderSteps);
-LimitedEncoder subEncoder(15, 16, 0, encoderSteps);
-const int envPin = 0;
-const int lfoPin = 1;
-const int subPin = 2;
-
-float envAttackValue = 0;
-float envReleaseValue = 0;
-float lfoFreqValue = 0;
-float lfoAmpValue = 0;
-float subFreqValue = 0;
-float subAmpValue = 0;
-bool envButtonValue = HIGH;
-bool lfoButtonValue = HIGH;
-bool subButtonValue = HIGH;
-bool envState = 0;
-bool lfoState = 0;
-bool subState = 0;
+TogglableEncoder envEncoder(19, 20, 0, 100, 0, 10000, 0, 10000);
+TogglableEncoder lfoEncoder(17, 18, 1, 100, 0, 10, 0, 0.95);
+TogglableEncoder subEncoder(15, 16, 2, 100, 215, 225, 0, 1.0);
 
 void setup() {
-  pinMode(envPin, INPUT_PULLUP);
-  pinMode(lfoPin, INPUT_PULLUP);
-  pinMode(subPin, INPUT_PULLUP);
-
   Serial.begin(9600);
 
   AudioMemory(10);
@@ -58,9 +36,9 @@ void setup() {
   sub.frequency(220);
   sub.amplitude(1.0);
 
-  envEncoder.write(1);
-  lfoEncoder.write(5);
-  subEncoder.write(1.0);
+  envEncoder.setEncoderValues(1, 1000);
+  lfoEncoder.setEncoderValues(5, 0.95);
+  subEncoder.setEncoderValues(1.0, 220);
 
   envelope.decay(0);
   envelope.sustain(1.0);
@@ -69,69 +47,50 @@ void setup() {
 bool playing = false;
 unsigned long time;
 void loop() {
-  bool envButton = digitalRead(envPin);
-  bool lfoButton = digitalRead(lfoPin);
-  bool subButton = digitalRead(subPin);
+  envEncoder.read();
+  lfoEncoder.read();
+  subEncoder.read();
 
-  if (envButton == LOW && envButton != envButtonValue) {
-    envState = !envState;
-    Serial.println(envState ? "Env: Release" : "Env: Attack");
-  }
-  envButtonValue = envButton;
-
-  if (lfoButton == LOW && lfoButton != lfoButtonValue) {
-    lfoState = !lfoState;
-    Serial.println(lfoState ? "LFO: Amplitude" : "Env: Frequency");
-  }
-  lfoButtonValue = lfoButton;
-
-  if (subButton == LOW && subButton != subButtonValue) {
-    subState = !subState;
-    Serial.println(subState ? "Sub: Amplitude" : "Sub: Detune");
-  }
-  subButtonValue = subButton;
-
-  float envValue = map_float(envEncoder.read(), 0, encoderSteps, 0, 10000);
-  if (envState && envValue != envReleaseValue) {
-    envelope.release(envValue);
-    envReleaseValue = envValue;
-    Serial.println(envReleaseValue);
-  } else if (!envState && envValue != envAttackValue) {
-    envelope.attack(envValue);
-    envAttackValue = envValue;
-    Serial.println(envAttackValue);
+  if (envEncoder.isButtonClicked()) {
+    Serial.println(envEncoder.getSelectedEncoder() ? "Env: Release" : "Env: Attack");
   }
 
-  if (lfoState) {
-    float lfoValue = map_float(lfoEncoder.read(), 0, encoderSteps, 0, 1.0);
-    if (lfoValue != lfoAmpValue) {
-      lfo.amplitude(lfoValue);
-      lfoAmpValue = lfoValue;
-      Serial.println(lfoAmpValue);
+  if (lfoEncoder.isButtonClicked()) {
+    Serial.println(lfoEncoder.getSelectedEncoder() ? "LFO: Amplitude" : "Env: Frequency");
+  }
+
+  if (subEncoder.isButtonClicked()) {
+    Serial.println(subEncoder.getSelectedEncoder() ? "Sub: Amplitude" : "Sub: Detune");
+  }
+
+  if (envEncoder.hasEncoderValueChanged()) {
+    float value = envEncoder.getEncoderValue();
+    if (envEncoder.getSelectedEncoder()) {
+      envelope.release(value);
+    } else {
+      envelope.attack(value);
     }
-  } else {
-    float lfoValue = map_float(lfoEncoder.read(), 0, encoderSteps, 0, 10.0);
-    if (lfoValue != lfoFreqValue) {
-      lfo.frequency(lfoValue);
-      lfoFreqValue = lfoValue;
-      Serial.println(lfoFreqValue);
-    }
+    Serial.println(value);
   }
 
-  if (subState) {
-    float subValue = map_float(subEncoder.read(), 0, encoderSteps, 0, 1.0);
-    if (subValue != subAmpValue) {
-      sub.amplitude(subValue);
-      subAmpValue = subValue;
-      Serial.println(subAmpValue);
+  if (lfoEncoder.hasEncoderValueChanged()) {
+    float value = lfoEncoder.getEncoderValue();
+    if (lfoEncoder.getSelectedEncoder()) {
+      lfo.amplitude(value);
+    } else {
+      lfo.frequency(value);
     }
-  } else {
-    float subValue = map_float(subEncoder.read(), 0, encoderSteps, 220, 210);
-    if (subValue != subFreqValue) {
-      sub.frequency(subValue);
-      subFreqValue = subValue;
-      Serial.println(subFreqValue);
+    Serial.println(value);
+  }
+  
+  if (subEncoder.hasEncoderValueChanged()) {
+    float value = subEncoder.getEncoderValue();
+    if (subEncoder.getSelectedEncoder()) {
+      sub.amplitude(value);
+    } else {
+      sub.frequency(value);
     }
+    Serial.println(value);
   }
 
   unsigned long t = millis();
@@ -146,8 +105,4 @@ void loop() {
   }
 
   delay(30);
-}
-
-float map_float(float x, float in_min, float in_max, float out_min, float out_max) {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
