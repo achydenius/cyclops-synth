@@ -24,19 +24,15 @@ void TogglableEncoder::setEncoderValues(float firstMapped, float secondMapped) {
 }
 
 bool TogglableEncoder::isButtonClicked() {
-    return buttonClicked;
+    return buttonApi.fallingEdge();
 }
 
 void TogglableEncoder::readButton() {
-    int buttonValue = digitalRead(buttonPin);
-    if (buttonValue == LOW && previousButtonValue == HIGH) {
-        buttonClicked = true;
+    buttonApi.update();
+    if (buttonApi.fallingEdge()) {
         selectedEncoder = !selectedEncoder;
         setEncoderValues(encoderStates[0].mappedValue, encoderStates[1].mappedValue);
-    } else {
-        buttonClicked = false;
     }
-    previousButtonValue = buttonValue;
 }
 
 void TogglableEncoder::readEncoder() {

@@ -1,6 +1,7 @@
 #ifndef __TOGGLABLE_ENCODER__
 #define __TOGGLABLE_ENCODER__
 
+#include <Bounce.h>
 #include "LimitedEncoder.h"
 
 class TogglableEncoder {
@@ -37,9 +38,7 @@ class TogglableEncoder {
     EncoderState encoderStates[2];
     int selectedEncoder;
 
-    uint8_t buttonPin;
-    bool buttonClicked;
-    int previousButtonValue;
+    Bounce buttonApi;
 
 public:
     TogglableEncoder(
@@ -47,9 +46,7 @@ public:
         encoderApi(encoderPin1, encoderPin2, 0, encoderSteps),
         encoderSteps(encoderSteps),
         selectedEncoder(0),
-        buttonPin(buttonPin),
-        buttonClicked(false),
-        previousButtonValue(LOW)
+        buttonApi(buttonPin, 10)
     {
         pinMode(buttonPin, INPUT_PULLUP);
         encoderStates[0].parent = this;
