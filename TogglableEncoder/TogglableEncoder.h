@@ -59,6 +59,7 @@ public:
     int getSelectedEncoder();
     bool hasEncoderValueChanged();
     float getEncoderValue();
+    float getEncoderValue(int encoder);
     void setEncoderValues(float first, float second);
     bool isButtonClicked();
 

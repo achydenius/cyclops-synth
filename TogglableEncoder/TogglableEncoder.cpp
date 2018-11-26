@@ -14,7 +14,11 @@ bool TogglableEncoder::hasEncoderValueChanged() {
 }
 
 float TogglableEncoder::getEncoderValue() {
-    return encoderStates[selectedEncoder].mappedValue;
+    return getEncoderValue(selectedEncoder);
+}
+
+float TogglableEncoder::getEncoderValue(int encoder) {
+    return encoderStates[encoder].mappedValue;
 }
 
 void TogglableEncoder::setEncoderValues(float firstMapped, float secondMapped) {

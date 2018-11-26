@@ -24,7 +24,7 @@ AudioConnection          patchCord6(envelope, 0, usb, 0);
 
 TogglableEncoder envEncoder(19, 20, 0, 100, 0, 10000, 0, 10000);
 TogglableEncoder lfoEncoder(17, 18, 1, 100, 0, 10, 0, 0.95);
-TogglableEncoder subEncoder(15, 16, 2, 100, 215, 225, 0, 1.0);
+TogglableEncoder subEncoder(15, 16, 2, 100, -5, 5, 0, 1.0);
 
 void setup() {
   Serial.begin(9600);
@@ -42,67 +42,83 @@ void setup() {
 
   envelope.decay(0);
   envelope.sustain(1.0);
+
+  usbMIDI.setHandleNoteOn(noteOn);
+  usbMIDI.setHandleNoteOff(noteOff);
 }
 
-bool playing = false;
-unsigned long time;
 void loop() {
   envEncoder.read();
   lfoEncoder.read();
   subEncoder.read();
 
   if (envEncoder.isButtonClicked()) {
-    Serial.println(envEncoder.getSelectedEncoder() ? "Env: Release" : "Env: Attack");
+    print(envEncoder.getSelectedEncoder() ? "Env: Release" : "Env: Attack");
   }
 
   if (lfoEncoder.isButtonClicked()) {
-    Serial.println(lfoEncoder.getSelectedEncoder() ? "LFO: Amplitude" : "Env: Frequency");
+    print(lfoEncoder.getSelectedEncoder() ? "LFO: Amplitude" : "Env: Frequency");
   }
 
   if (subEncoder.isButtonClicked()) {
-    Serial.println(subEncoder.getSelectedEncoder() ? "Sub: Amplitude" : "Sub: Detune");
+    print(subEncoder.getSelectedEncoder() ? "Sub: Amplitude" : "Sub: Detune");
   }
 
   if (envEncoder.hasEncoderValueChanged()) {
     float value = envEncoder.getEncoderValue();
     if (envEncoder.getSelectedEncoder()) {
       envelope.release(value);
+      print("Env/Attack", value);
     } else {
       envelope.attack(value);
+      print("Env/Release", value);
     }
-    Serial.println(value);
   }
 
   if (lfoEncoder.hasEncoderValueChanged()) {
     float value = lfoEncoder.getEncoderValue();
     if (lfoEncoder.getSelectedEncoder()) {
       lfo.amplitude(value);
+      print("LFO/Amp", value);
     } else {
       lfo.frequency(value);
+      print("LFO/Freq", value);
     }
-    Serial.println(value);
   }
   
   if (subEncoder.hasEncoderValueChanged()) {
     float value = subEncoder.getEncoderValue();
     if (subEncoder.getSelectedEncoder()) {
       sub.amplitude(value);
+      print("Sub/Amp", value);
     } else {
       sub.frequency(value);
+      print("Sub/Freq", value);
     }
-    Serial.println(value);
   }
 
-  unsigned long t = millis();
-  if (t - time > 2000) {
-    if (playing) {
-      envelope.noteOff();
-    } else {
-      envelope.noteOn();
-    }
-    playing = !playing;
-    time = t;
-  }
+  usbMIDI.read();
+}
 
-  delay(30);
+void noteOn(byte channel, byte note, byte velocity) {
+    float freq = pow(2.0, (note - 69) / 12.0) * 440.0;
+    osc.frequency(freq);
+    sub.frequency(freq + subEncoder.getEncoderValue(0));
+    envelope.noteOn();
+    print("* on", freq);
+}
+
+void noteOff(byte channel, byte note, byte velocity) {
+    envelope.noteOff();
+    print("* off");
+}
+
+void print(String name) {
+  Serial.println(name);
+}
+
+void print(String name, float value) {
+  Serial.print(name);
+  Serial.print(": ");
+  Serial.println(value);
 }
