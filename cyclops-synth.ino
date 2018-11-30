@@ -23,9 +23,19 @@ AudioConnection          patchCord6(envelope, 0, usb, 0);
 AudioConnection          patchCord7(envelope, 0, usb, 1);
 // GUItool: end automatically generated code
 
-TogglableEncoder envEncoder(19, 20, 0, 100, 0, 10000, 0, 10000);
-TogglableEncoder lfoEncoder(17, 18, 1, 100, 0, 10, 0, 0.95);
-TogglableEncoder subEncoder(15, 16, 2, 100, -5, 5, 0, 1.0);
+const int envEncoderPin1 = 19;
+const int envEncoderPin2 = 20;
+const int envButtonPin = 0;
+const int lfoEncoderPin1 = 17;
+const int lfoEncoderPin2 = 18;
+const int lfoButtonPin = 1;
+const int subEncoderPin1 = 15;
+const int subEncoderPin2 = 16;
+const int subButtonPin = 2;
+
+TogglableEncoder envEncoder(envEncoderPin1, envEncoderPin2, envButtonPin, 100, 0, 5000, 0, 5000);
+TogglableEncoder lfoEncoder(lfoEncoderPin1, lfoEncoderPin2, lfoButtonPin, 100, 0, 10.0, 0, 0.95);
+TogglableEncoder subEncoder(subEncoderPin1, subEncoderPin2, subButtonPin, 50, 1.5, 2.5 , 0, 1.0);
 
 void setup() {
   Serial.begin(9600);
@@ -34,15 +44,21 @@ void setup() {
 
   osc.frequency(440);
   osc.amplitude(1.0);
-  sub.frequency(220);
-  sub.amplitude(1.0);
 
-  envEncoder.setEncoderValues(1, 1000);
-  lfoEncoder.setEncoderValues(5, 0.95);
-  subEncoder.setEncoderValues(1.0, 220);
+  envEncoder.setEncoderValues(50, 500);
+  lfoEncoder.setEncoderValues(2.5, 30);
+  subEncoder.setEncoderValues(1.5, 0);
 
+  envelope.attack(envEncoder.getEncoderValue(0));
   envelope.decay(0);
   envelope.sustain(1.0);
+  envelope.release(envEncoder.getEncoderValue(1));
+
+  lfo.frequency(lfoEncoder.getEncoderValue(0));
+  lfo.amplitude(lfoEncoder.getEncoderValue(1));
+
+  sub.frequency(subEncoder.getEncoderValue(0));
+  sub.amplitude(subEncoder.getEncoderValue(1));
 
   usbMIDI.setHandleNoteOn(noteOn);
   usbMIDI.setHandleNoteOff(noteOff);
@@ -58,11 +74,11 @@ void loop() {
   }
 
   if (lfoEncoder.isButtonClicked()) {
-    print(lfoEncoder.getSelectedEncoder() ? "LFO: Amplitude" : "Env: Frequency");
+    print(lfoEncoder.getSelectedEncoder() ? "LFO: Amplitude" : "LFO: Frequency");
   }
 
   if (subEncoder.isButtonClicked()) {
-    print(subEncoder.getSelectedEncoder() ? "Sub: Amplitude" : "Sub: Detune");
+    print(subEncoder.getSelectedEncoder() ? "Sub: Amplitude" : "Sub: Frequency");
   }
 
   if (envEncoder.hasEncoderValueChanged()) {
@@ -103,15 +119,14 @@ void loop() {
 
 void noteOn(byte channel, byte note, byte velocity) {
     float freq = pow(2.0, (note - 69) / 12.0) * 440.0;
+    float subFreq  = freq / pow(2, int(subEncoder.getEncoderValue(0)));
     osc.frequency(freq);
-    sub.frequency(freq + subEncoder.getEncoderValue(0));
+    sub.frequency(subFreq);
     envelope.noteOn();
-    print("* on", freq);
 }
 
 void noteOff(byte channel, byte note, byte velocity) {
     envelope.noteOff();
-    print("* off");
 }
 
 void print(String name) {

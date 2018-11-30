@@ -22,6 +22,8 @@ float TogglableEncoder::getEncoderValue(int encoder) {
 }
 
 void TogglableEncoder::setEncoderValues(float firstMapped, float secondMapped) {
+    encoderStates[0].mappedValue = firstMapped;
+    encoderStates[1].mappedValue = secondMapped;
     encoderStates[0].encoderValue = encoderStates[0].mappedToEncoder(firstMapped);
     encoderStates[1].encoderValue = encoderStates[1].mappedToEncoder(secondMapped);
     encoderApi.write(encoderStates[selectedEncoder].encoderValue);
