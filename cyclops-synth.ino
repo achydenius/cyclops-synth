@@ -20,6 +20,7 @@ AudioConnection          patchCord3(sub, 0, mixer, 1);
 AudioConnection          patchCord4(osc, 0, mixer, 0);
 AudioConnection          patchCord5(mixer, envelope);
 AudioConnection          patchCord6(envelope, 0, usb, 0);
+AudioConnection          patchCord7(envelope, 0, usb, 1);
 // GUItool: end automatically generated code
 
 TogglableEncoder envEncoder(19, 20, 0, 100, 0, 10000, 0, 10000);
